@@ -48,14 +48,18 @@ public class ChooseAreaActivity extends Activity {
 	private City selectedCity;
 
 	private int currentLevel;
+	private boolean isFromWeatherActivity;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		isFromWeatherActivity = getIntent().getBooleanExtra(
+				"from_weather_activity", false);
 		// 如果文件中已经存在选定好的城市记录，则根据该记录直接加载天气信息的页面
 		SharedPreferences preference = PreferenceManager
 				.getDefaultSharedPreferences(this);
-		if (preference.getBoolean("city_selected", false)) {
+		//如果选择了本地且不是从切换功能中启动的activity才直接进入天气界面
+		if (preference.getBoolean("city_selected", false)&& !isFromWeatherActivity) {
 			Intent intent = new Intent(this, WeatherActivity.class);
 			// 启动后直接显示本地的天气信息（直接调用showWeather()）
 			startActivity(intent);
@@ -224,6 +228,11 @@ public class ChooseAreaActivity extends Activity {
 		} else if (currentLevel == LEVIE_CITY) {
 			queryProvinces();
 		} else {
+			//如果是从天气页面跳转过来的，则返回天气页面
+			if(isFromWeatherActivity){
+				Intent intent=new Intent(this, WeatherActivity.class);
+				startActivity(intent);
+			}
 			finish();
 		}
 	}

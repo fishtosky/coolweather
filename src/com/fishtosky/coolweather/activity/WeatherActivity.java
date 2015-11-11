@@ -1,21 +1,25 @@
 package com.fishtosky.coolweather.activity;
 
 import com.fishtosky.coolweather.R;
+import com.fishtosky.coolweather.service.AutoUpdateService;
 import com.fishtosky.coolweather.util.HttpCallbackListener;
 import com.fishtosky.coolweather.util.HttpUtils;
 import com.fishtosky.coolweather.util.Utility;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class WeatherActivity extends Activity {
+public class WeatherActivity extends Activity implements OnClickListener {
 	private LinearLayout weatherInfoLayout;
 	private TextView cityName;
 	private TextView publishTime;
@@ -23,6 +27,8 @@ public class WeatherActivity extends Activity {
 	private TextView temp1;
 	private TextView temp2;
 	private TextView currentDate;
+	private Button switchCity;
+	private Button refreshWeather;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +42,11 @@ public class WeatherActivity extends Activity {
 		temp1 = (TextView) findViewById(R.id.temp1);
 		temp2 = (TextView) findViewById(R.id.temp2);
 		currentDate = (TextView) findViewById(R.id.current_date);
+		switchCity = (Button) findViewById(R.id.switch_city);
+		refreshWeather = (Button) findViewById(R.id.refresh_weather);
+		switchCity.setOnClickListener(this);
+		refreshWeather.setOnClickListener(this);
+
 		String countyCode = getIntent().getStringExtra("county_code");
 		if (!TextUtils.isEmpty(countyCode)) {
 			// 如果从启动该activity的intent中返回了县级代码，则根据县级代码查询天气
@@ -104,12 +115,39 @@ public class WeatherActivity extends Activity {
 		SharedPreferences preference = PreferenceManager
 				.getDefaultSharedPreferences(this);
 		cityName.setText(preference.getString("city_name", ""));
-		publishTime.setText("今天"+preference.getString("publish_time", "")+"发布");
+		publishTime.setText("今天" + preference.getString("publish_time", "")
+				+ "发布");
 		currentDate.setText(preference.getString("current_date", ""));
 		weatherDesc.setText(preference.getString("weather_desc", ""));
 		temp1.setText(preference.getString("temp1", ""));
 		temp2.setText(preference.getString("temp2", ""));
 		cityName.setVisibility(View.VISIBLE);
 		weatherInfoLayout.setVisibility(View.VISIBLE);
+		
+		//显示天气信息的同时激活服务
+		Intent intent=new Intent(this, AutoUpdateService.class);
+		startService(intent);
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		case R.id.switch_city:
+			Intent intent = new Intent(this, ChooseAreaActivity.class);
+			intent.putExtra("from_weather_activity", true);
+			startActivity(intent);
+			finish();
+			break;
+		case R.id.refresh_weather:
+			publishTime.setText("同步中...");
+			SharedPreferences preference = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			//获取到天气代码
+			String weatherCode=preference.getString("weather_code", "");
+			if(!TextUtils.isEmpty(weatherCode)){
+				queryWeatherInfo(weatherCode);
+			}
+			break;
+		}
 	}
 }
