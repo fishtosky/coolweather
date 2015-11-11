@@ -1,9 +1,19 @@
 package com.fishtosky.coolweather.util;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.fishtosky.coolweather.model.City;
 import com.fishtosky.coolweather.model.County;
 import com.fishtosky.coolweather.model.Province;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 /*解析从服务器返回数据的工具类*/
@@ -62,8 +72,8 @@ public class Utility {
 			String[] allCounties = response.split(",");
 			if (allCounties != null && allCounties.length > 0) {
 				for (String c : allCounties) {
-					String[] array=c.split("\\|");
-					County county=new County();
+					String[] array = c.split("\\|");
+					County county = new County();
 					county.setCountyCode(array[0]);
 					county.setCountyName(array[1]);
 					county.setCityId(cityId);
@@ -73,5 +83,42 @@ public class Utility {
 			}
 		}
 		return false;
+	}
+
+	/* 解析服务器返回的JSON数据，并将解析的结果存储到本地的sharepreference文件中 */
+	public static void handleWeatherResponse(Context context, String response) {
+		try {
+			JSONObject jsonObject = new JSONObject(response);
+			JSONObject weatherInfo = jsonObject.getJSONObject("weatherinfo");
+			String cityName = weatherInfo.getString("city");
+			String weatherCode = weatherInfo.getString("cityid");
+			String temp1 = weatherInfo.getString("temp1");
+			String temp2 = weatherInfo.getString("temp2");
+			String weatherDesp = weatherInfo.getString("weather");
+			String publishTime = weatherInfo.getString("ptime");
+			saveWeatherInfo(context, cityName, weatherCode, temp1, temp2,
+					weatherDesp, publishTime);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private static void saveWeatherInfo(Context context, String cityName,
+			String weatherCode, String temp1, String temp2, String weatherDesp,
+			String publishTime) {
+		SharedPreferences.Editor editor = PreferenceManager
+				.getDefaultSharedPreferences(context).edit();
+		SimpleDateFormat sdf=new SimpleDateFormat("yyyy年M月d日", Locale.CHINA);
+		//放置一个标志位
+		editor.putBoolean("city_selected", true);
+		editor.putString("city_name", cityName);
+		editor.putString("weather_code", weatherCode);
+		editor.putString("temp1", temp1);
+		editor.putString("temp2", temp2);
+		editor.putString("weather_desc", weatherDesp);
+		editor.putString("publish_time", publishTime);
+		editor.putString("current_date", sdf.format(new Date()));
+		editor.commit();
 	}
 }

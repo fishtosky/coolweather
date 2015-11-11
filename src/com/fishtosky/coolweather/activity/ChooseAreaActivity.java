@@ -14,7 +14,10 @@ import com.fishtosky.coolweather.util.Utility;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.Window;
@@ -49,6 +52,17 @@ public class ChooseAreaActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// 如果文件中已经存在选定好的城市记录，则根据该记录直接加载天气信息的页面
+		SharedPreferences preference = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		if (preference.getBoolean("city_selected", false)) {
+			Intent intent = new Intent(this, WeatherActivity.class);
+			// 启动后直接显示本地的天气信息（直接调用showWeather()）
+			startActivity(intent);
+			finish();
+			return;
+		}
+
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.chose_area);
 		titleView = (TextView) findViewById(R.id.title_text);
@@ -68,6 +82,13 @@ public class ChooseAreaActivity extends Activity {
 				} else if (currentLevel == LEVIE_CITY) {
 					selectedCity = cityList.get(position);
 					queryCounties();
+				} else if (currentLevel == LEVIE_COUNTY) {
+					County county = countyList.get(position);
+					Intent intent = new Intent(ChooseAreaActivity.this,
+							WeatherActivity.class);
+					intent.putExtra("county_code", county.getCountyCode());
+					startActivity(intent);
+					finish();
 				}
 			}
 		});
@@ -149,17 +170,17 @@ public class ChooseAreaActivity extends Activity {
 							response, selectedCity.getId());
 				}
 				System.out.println(result);
-				
-				//如果查询到数据则到主线程更新UI
-				if(result){
+
+				// 如果查询到数据则到主线程更新UI
+				if (result) {
 					runOnUiThread(new Runnable() {
 						public void run() {
 							closeProgressDialog();
-							if("province".equals(type)){
+							if ("province".equals(type)) {
 								queryProvinces();
-							}else if("city".equals(type)){
+							} else if ("city".equals(type)) {
 								queryCities();
-							}else if("county".equals(type)){
+							} else if ("county".equals(type)) {
 								queryCounties();
 							}
 						}
@@ -172,7 +193,8 @@ public class ChooseAreaActivity extends Activity {
 				runOnUiThread(new Runnable() {
 					public void run() {
 						closeProgressDialog();
-						Toast.makeText(ChooseAreaActivity.this, "加载失败！", Toast.LENGTH_SHORT).show();
+						Toast.makeText(ChooseAreaActivity.this, "加载失败！",
+								Toast.LENGTH_SHORT).show();
 					}
 				});
 			}
@@ -180,28 +202,28 @@ public class ChooseAreaActivity extends Activity {
 	}
 
 	private void showProgressDialog() {
-		if(progressDialog==null){
-			progressDialog=new ProgressDialog(this);
+		if (progressDialog == null) {
+			progressDialog = new ProgressDialog(this);
 			progressDialog.setMessage("正在加载...");
 			progressDialog.setCanceledOnTouchOutside(false);
 		}
 		progressDialog.show();
 	}
-	
-	private void closeProgressDialog(){
-		if(progressDialog!=null){
+
+	private void closeProgressDialog() {
+		if (progressDialog != null) {
 			progressDialog.dismiss();
 		}
 	}
-	
-	//重写Back键
+
+	// 重写Back键
 	@Override
 	public void onBackPressed() {
-		if(currentLevel==LEVIE_COUNTY){
+		if (currentLevel == LEVIE_COUNTY) {
 			queryCities();
-		}else if(currentLevel==LEVIE_CITY){
+		} else if (currentLevel == LEVIE_CITY) {
 			queryProvinces();
-		}else{
+		} else {
 			finish();
 		}
 	}
